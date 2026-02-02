@@ -18,33 +18,3 @@ Quick start
 ```bash
 python main.py
 ```
-
-Commit & push this `upload` folder to GitHub
-1. (Optional) Set repo-local git identity if you don't want to set it globally:
-
-```bash
-cd "c:\Users\Admin\Documents\VSCodefiles\VideoGenerator\upload"
-git config user.email "you@example.com"
-git config user.name "Your Name"
-```
-
-2. Initialize, commit and push (replace the remote URL):
-
-```bash
-git init
-git add main.py vidgen.py README.md
-git commit -m "Add main.py, vidgen.py and README"
-git branch -M main
-git remote add origin https://github.com/USERNAME/REPO.git
-git push -u origin main
-```
-
-If you prefer `gh` (GitHub CLI):
-
-```bash
-gh repo create REPO --public --source=. --push
-```
-
-Notes
-- Replace `USERNAME/REPO` and the `user.email` / `user.name` placeholders with your actual values before pushing.
-- If you hit the "unable to auto-detect email address" error, set `user.email` and `user.name` as shown above.
