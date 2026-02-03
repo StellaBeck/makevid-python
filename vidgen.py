@@ -7,13 +7,14 @@ import shutil
 import tempfile
 import subprocess
 import gc
+import glob
 
 
 # --------------------------
 # TTS SETTINGS
 # --------------------------
 
-TTS_SPEAKER = "p285"    # male voice
+TTS_SPEAKER = "p299"    # male voice
 
 # Default output video resolution — lower by default to reduce memory usage.
 # Change to (1920, 1080) if you have sufficient RAM.
@@ -126,6 +127,11 @@ def generate_video(clips, output_file="final_video.mp4"):
             # Build the clip for this scene only
             img_clip = ImageClip(scene['image']).with_duration(scene['duration'])
 
+            # Slow zoom-in (Ken Burns). 1.0 -> zoom_amount over the clip duration.
+            zoom_amount = 1.05  # 1.05 subtle, 1.15 stronger
+            duration = scene['duration']
+            img_clip = img_clip.resized(lambda t: 1 + (zoom_amount - 1) * (t / duration)).with_position(('center', 'center'))
+
             txt_clip = (TextClip(
                     text=scene['text'] + '\n',
                     font_size=46,
@@ -133,15 +139,15 @@ def generate_video(clips, output_file="final_video.mp4"):
                     stroke_color='black',
                     stroke_width=2,
                     method='caption',
-                    size=(int(img_clip.w * 0.9), None)
+                    size=(int(scene['width'] * 0.9), None)
                 )
-                .with_position(('center', img_clip.h - 150))
+                .with_position(('center', scene['height'] - 150))
                 .with_duration(scene['duration'])
             )
 
             audio = AudioFileClip(scene['audio'])
 
-            composite = CompositeVideoClip([img_clip, txt_clip]).with_audio(audio)
+            composite = CompositeVideoClip([img_clip, txt_clip], size=(scene['width'], scene['height'])).with_audio(audio)
 
             # Write each clip to disk (use libx264 + aac for compatibility)
             composite.write_videofile(
@@ -222,6 +228,15 @@ def generate_video(clips, output_file="final_video.mp4"):
         if os.path.exists("temp_audio"):
             print("\nCleaning up temp_audio...")
             shutil.rmtree("temp_audio", ignore_errors=True)
+
+        # --------------------------
+        # CLEANUP leftover temp_resized images
+        # --------------------------
+        for p in glob.glob("temp_resized_*.png"):
+            try:
+                os.remove(p)
+            except Exception:
+                pass
 
     print("DONE ✓")
 
