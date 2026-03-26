@@ -1,4 +1,4 @@
-# VideoGenerator (upload)
+# VideoGenerator 
 
 This folder contains a minimal upload of the project's runnable files for convenient sharing.
 
