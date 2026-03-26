@@ -15,7 +15,7 @@ def main():
     tts = TTS(TTS_MODEL)
 
     clips = build_scenes(images, script, tts)
-    generate_video(clips, "test_output.mp4")
+    generate_video(clips, "Test.mp4")
 
 def load_images_from_folder(folder):
     valid_ext = (".jpg", ".jpeg", ".png", ".webp")

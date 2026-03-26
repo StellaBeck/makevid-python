@@ -1,5 +1,6 @@
 #from TTS.api import TTS
-from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip, TextClip, vfx
+from moviepy.video.fx import FadeIn
 import uuid
 import os
 from PIL import Image
@@ -128,22 +129,25 @@ def generate_video(clips, output_file="final_video.mp4"):
             img_clip = ImageClip(scene['image']).with_duration(scene['duration'])
 
             # Slow zoom-in (Ken Burns). 1.0 -> zoom_amount over the clip duration.
-            zoom_amount = 1.05  # 1.05 subtle, 1.15 stronger
+            zoom_amount = 1.08  # 1.05 subtle, 1.15 stronger
             duration = scene['duration']
             img_clip = img_clip.resized(lambda t: 1 + (zoom_amount - 1) * (t / duration)).with_position(('center', 'center'))
 
             txt_clip = (TextClip(
                     text=scene['text'] + '\n',
-                    font_size=46,
-                    color='white',
-                    stroke_color='black',
-                    stroke_width=2,
+                    font_size=55,
+                    font=r'C:\Windows\Fonts\ROCKB.TTF',  
+                    color='#1e1e1e',
+                    stroke_color='white',
+                    stroke_width=1,
                     method='caption',
                     size=(int(scene['width'] * 0.9), None)
                 )
                 .with_position(('center', scene['height'] - 150))
                 .with_duration(scene['duration'])
             )
+            txt_clip = txt_clip.resized(lambda t: 0.95 + 0.05 * (t / 0.3) if t < 0.3 else 1.0).with_position(('center', scene['height'] - 150))
+            txt_clip = txt_clip.with_effects([FadeIn(0.2)])
 
             audio = AudioFileClip(scene['audio'])
 
