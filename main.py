@@ -1,4 +1,5 @@
 from TTS.api import TTS
+import stable_whisper
 from vidgen import *
 import json
 
@@ -13,9 +14,10 @@ def main():
     
     print("Loading TTS model...")
     tts = TTS(TTS_MODEL)
+    model = stable_whisper.load_model('tiny')
 
     clips = build_scenes(images, script, tts)
-    generate_video(clips, "Test.mp4")
+    generate_video(clips, model, "Test.mp4")
 
 def load_images_from_folder(folder):
     valid_ext = (".jpg", ".jpeg", ".png", ".webp")

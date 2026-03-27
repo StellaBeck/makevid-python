@@ -9,6 +9,7 @@ import tempfile
 import subprocess
 import gc
 import glob
+import stable_whisper
 
 
 # --------------------------
@@ -19,8 +20,8 @@ TTS_SPEAKER = "p299"    # male voice
 
 # Default output video resolution — lower by default to reduce memory usage.
 # Change to (1920, 1080) if you have sufficient RAM.
-VIDEO_WIDTH = 1920
-VIDEO_HEIGHT = 1080
+VIDEO_WIDTH = 1080
+VIDEO_HEIGHT = 1920
 
 # ----------------------------
 # Helper: center-crop image to target size
@@ -66,6 +67,7 @@ def build_scenes(images, script_lines, tts, width=VIDEO_WIDTH, height=VIDEO_HEIG
     clips = []
 
     for img_path, text in zip(images, script_lines):
+
         print(f"\nGenerating audio for: {text}")
 
         # unique audio filename
@@ -110,7 +112,7 @@ def build_scenes(images, script_lines, tts, width=VIDEO_WIDTH, height=VIDEO_HEIG
 # --------------------------
 # 2) Generate video + CLEANUP
 # --------------------------
-def generate_video(clips, output_file="final_video.mp4"):
+def generate_video(clips, model, output_file="final_video.mp4"):
     """
     Combines clips → exports final video → cleans temp_audio folder.
     """
@@ -133,25 +135,36 @@ def generate_video(clips, output_file="final_video.mp4"):
             duration = scene['duration']
             img_clip = img_clip.resized(lambda t: 1 + (zoom_amount - 1) * (t / duration)).with_position(('center', 'center'))
 
-            txt_clip = (TextClip(
-                    text=scene['text'] + '\n',
-                    font_size=55,
+            alignment_result = model.align(scene['audio'], scene['text'], language='en')
+            alignment_result.split_by_length(max_words=3, max_chars=15)
+            scene_text_clips = []
+            for segment in alignment_result.segments:
+                # Create the text clip for THIS specific group
+                txt = (TextClip(
+                    text=segment.text.strip() + '\n',
+                    font_size=65, 
                     font=r'C:\Windows\Fonts\ROCKB.TTF',  
-                    color='#1e1e1e',
-                    stroke_color='white',
+                    color='#3D352E',
+                    stroke_color='#F5F5DC',
                     stroke_width=1,
                     method='caption',
                     size=(int(scene['width'] * 0.9), None)
                 )
-                .with_position(('center', scene['height'] - 150))
-                .with_duration(scene['duration'])
-            )
-            txt_clip = txt_clip.resized(lambda t: 0.95 + 0.05 * (t / 0.3) if t < 0.3 else 1.0).with_position(('center', scene['height'] - 150))
-            txt_clip = txt_clip.with_effects([FadeIn(0.2)])
+                .with_start(segment.start)
+                .with_end(segment.end) # Clip disappears when the next group starts
+                .with_position(('center', 0.3), relative=True))
+                txt = txt.resized(lambda t: 0.95 + 0.05 * (t / 0.2) if t < 0.2 else 1.0).with_position(('center', 0.3), relative=True)
+                
+                scene_text_clips.append(txt)
 
+            
             audio = AudioFileClip(scene['audio'])
 
-            composite = CompositeVideoClip([img_clip, txt_clip], size=(scene['width'], scene['height'])).with_audio(audio)
+            # Combine image and ALL the timed text clips
+            composite = CompositeVideoClip(
+                [img_clip] + scene_text_clips, 
+                size=(scene['width'], scene['height'])
+            ).with_audio(audio)
 
             # Write each clip to disk (use libx264 + aac for compatibility)
             composite.write_videofile(
@@ -172,7 +185,8 @@ def generate_video(clips, output_file="final_video.mp4"):
             except Exception:
                 pass
             try:
-                txt_clip.close()
+                for t_clip in scene_text_clips:
+                    t_clip.close()
             except Exception:
                 pass
             try:
@@ -180,7 +194,7 @@ def generate_video(clips, output_file="final_video.mp4"):
             except Exception:
                 pass
 
-            del composite, img_clip, txt_clip, audio
+            del composite, img_clip, scene_text_clips, audio
             gc.collect()
 
             # remove the temp resized image for this scene
@@ -244,8 +258,3 @@ def generate_video(clips, output_file="final_video.mp4"):
 
     print("DONE ✓")
 
-
-# Example usage has been moved to `main.py` so this module can be
-# imported without executing the example run.  See `main.py` for a
-# runnable `main()` that constructs the TTS model and calls
-# `build_scenes` / `generate_video`.

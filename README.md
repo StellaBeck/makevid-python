@@ -1,4 +1,4 @@
-# VideoGenerator (upload)
+# VideoGenerator
 
 This folder contains a minimal upload of the project's runnable files for convenient sharing.
 
@@ -7,7 +7,7 @@ This folder contains a minimal upload of the project's runnable files for conven
 
 Requirements
 - Python 3.8+
-- `moviepy`, `Pillow`, and the TTS package you use (example uses `TTS.api`).
+- `moviepy`, `Pillow`, `TTS`, and `stable_whisper` packages.
 - `ffmpeg` available on PATH for final concatenation and video writing.
 
 Quick start
